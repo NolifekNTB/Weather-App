@@ -8,10 +8,8 @@ import com.example.weatherapp.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
-import java.util.Date
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,6 +19,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
         lifecycleScope.launch {
             val response = try {
                 RetrofitInstance.myApi.getApi()
@@ -41,7 +40,7 @@ class MainActivity : AppCompatActivity() {
 
                 binding.TVcelsius.text = "$temperature°C"
                 binding.tvWind.text = "$wind km/h"
-                binding.tvSunrise?.text = unixTime.toString()
+                binding.tvSunrise.text = unixTime.toString()
             } else {
                 Log.d(TAG, "Reponse not successful")
             }
