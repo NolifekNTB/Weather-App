@@ -22,6 +22,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var TAG = "MainActivity"
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
+    private var latitude: Double = 0.0
+    private var longitude: Double = 0.0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -29,14 +31,35 @@ class MainActivity : AppCompatActivity() {
 
         //location
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-        binding.btnTest?.setOnClickListener {
-            fetchLocation()
-        }
 
-        //Retrofit
+        fetchLocation()
+    }
+
+    private fun fetchLocation() {
+       val task = fusedLocationProviderClient.lastLocation
+
+        //Permissions
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED && ActivityCompat
+                .checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+            ) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 101)
+        }
+        task.addOnSuccessListener {
+            if (it != null) {
+                latitude = it.latitude
+                longitude = it.longitude
+                Log.d("CIPA", "$latitude, lon $longitude")
+
+                performRetrofitRequest()
+            }
+        }
+    }
+
+    private fun performRetrofitRequest() {
         lifecycleScope.launch {
             val response = try {
-                RetrofitInstance.myApi.getApi()
+                RetrofitInstance.myApi.getApi(latitude, longitude)
             } catch (e: IOException) {
                 Log.d(TAG, "internet connection issue")
                 return@launch
@@ -57,23 +80,6 @@ class MainActivity : AppCompatActivity() {
                 binding.tvSunrise.text = unixTime.toString()
             } else {
                 Log.d(TAG, "Reponse not successful")
-            }
-        }
-    }
-
-    private fun fetchLocation() {
-       val task = fusedLocationProviderClient.lastLocation
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED && ActivityCompat
-                .checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            ) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 101)
-            return
-        }
-        task.addOnSuccessListener {
-            if (it != null) {
-                Toast.makeText(applicationContext, "${it.latitude} ${it.longitude}", Toast.LENGTH_SHORT).show()
             }
         }
     }
