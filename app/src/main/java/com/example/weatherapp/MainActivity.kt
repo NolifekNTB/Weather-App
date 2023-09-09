@@ -1,11 +1,13 @@
 package com.example.weatherapp
 
-import android.app.Activity
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.weatherapp.databinding.ActivityMainBinding
@@ -24,6 +26,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
+    //Use to current location in spinner
+    private var currentLat: Double = 0.0
+    private var currentLon: Double = 0.0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -31,31 +36,73 @@ class MainActivity : AppCompatActivity() {
 
         //location
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
-
         fetchLocation()
+
+        //Spinner
+        spinnerHandle()
     }
 
-    private fun fetchLocation() {
-       val task = fusedLocationProviderClient.lastLocation
+    private fun spinnerHandle(){
+        //City use in adapter
+        val cities = arrayOf("Current", "Warsaw", "New York", "Sydney")
+        //Map city to latitude and longtitude
+        val cityCoordinates = HashMap<String, Pair<Double, Double>>()
+        cityCoordinates["Current"] = Pair(currentLat, currentLon)
+        Log.d("CIPA", "lat $latitude, lon $longitude")
+        cityCoordinates["Warsaw"] = Pair(52.237049, 21.017532)
+        cityCoordinates["New York"] = Pair(40.730610, -73.935242)
+        cityCoordinates["Sydney"] = Pair(-33.8698439,  151.2082848)
 
-        //Permissions
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED && ActivityCompat
-                .checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
-            ) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 101)
-        }
-        task.addOnSuccessListener {
-            if (it != null) {
-                latitude = it.latitude
-                longitude = it.longitude
-                Log.d("CIPA", "$latitude, lon $longitude")
+        //Assign xml spinner to variable
+        val spinner: Spinner = findViewById(R.id.sCity)
+        //Map cities (text) to xml layout
+        //simple_spinner_item actual view
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, cities)
+        //Set look when user expand list
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            //When user choose something
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedCity = cities[position]
+                latitude = cityCoordinates[selectedCity]!!.first
+                longitude = cityCoordinates[selectedCity]!!.second
 
                 performRetrofitRequest()
+            }
+
+            //When  nothing is choosed
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                //
             }
         }
     }
 
+    private fun fetchLocation() {
+            //last known location
+            val task = fusedLocationProviderClient.lastLocation
+
+            //Permissions
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat
+                    .checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                ) {
+                //Request for permission if we don't have them
+                ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 101)
+            }
+            task.addOnSuccessListener {
+                //If it isn't null, operation is successful
+                if (it != null) {
+                    latitude = it.latitude
+                    longitude = it.longitude
+                    currentLat = it.latitude
+                    currentLon = it.longitude
+
+                    performRetrofitRequest()
+                }
+            }
+        }
     private fun performRetrofitRequest() {
         lifecycleScope.launch {
             val response = try {
@@ -69,7 +116,6 @@ class MainActivity : AppCompatActivity() {
             }
             if (response.isSuccessful && response.body() != null) {
                 val data = response.body()!!
-                Log.d(TAG, "Dane: $data")
                 val temperature = data.main.temp.toInt()
                 val wind = data.wind.speed
                 val sunrise = data.sys.sunrise
