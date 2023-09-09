@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.weatherapp.databinding.ActivityMainBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
@@ -26,9 +27,8 @@ class MainActivity : AppCompatActivity() {
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
-    //Use to current location in spinner
-    private var currentLat: Double = 0.0
-    private var currentLon: Double = 0.0
+    //Map city to latitude and longtitude
+    val cityCoordinates = HashMap<String, Pair<Double, Double>>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -45,10 +45,8 @@ class MainActivity : AppCompatActivity() {
     private fun spinnerHandle(){
         //City use in adapter
         val cities = arrayOf("Current", "Warsaw", "New York", "Sydney")
-        //Map city to latitude and longtitude
-        val cityCoordinates = HashMap<String, Pair<Double, Double>>()
-        cityCoordinates["Current"] = Pair(currentLat, currentLon)
-        Log.d("CIPA", "lat $latitude, lon $longitude")
+
+        cityCoordinates["Current"] = Pair(0.0,0.0)
         cityCoordinates["Warsaw"] = Pair(52.237049, 21.017532)
         cityCoordinates["New York"] = Pair(40.730610, -73.935242)
         cityCoordinates["Sydney"] = Pair(-33.8698439,  151.2082848)
@@ -91,14 +89,15 @@ class MainActivity : AppCompatActivity() {
                 //Request for permission if we don't have them
                 ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), 101)
             }
+
             task.addOnSuccessListener {
                 //If it isn't null, operation is successful
                 if (it != null) {
                     latitude = it.latitude
                     longitude = it.longitude
-                    currentLat = it.latitude
-                    currentLon = it.longitude
 
+                    //Update spinner current location
+                    cityCoordinates["Current"] = Pair(latitude, longitude)
                     performRetrofitRequest()
                 }
             }
