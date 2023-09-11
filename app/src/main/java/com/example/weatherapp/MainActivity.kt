@@ -27,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private var latitude: Double = 0.0
     private var longitude: Double = 0.0
+    //Units (default metric)
+    private var units = "metric"
     //Map city to latitude and longtitude
     val cityCoordinates = HashMap<String, Pair<Double, Double>>()
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +42,16 @@ class MainActivity : AppCompatActivity() {
 
         //Spinner
         spinnerHandle()
+
+        //Change Celcius to Fahrenheit (switch)
+        binding.sCelFar?.setOnCheckedChangeListener{ buttonView, isChecked ->
+            if (isChecked) {
+                units="imperial"
+            } else {
+                units="metric"
+            }
+        }
+
     }
 
     private fun spinnerHandle(){
@@ -105,7 +117,7 @@ class MainActivity : AppCompatActivity() {
     private fun performRetrofitRequest() {
         lifecycleScope.launch {
             val response = try {
-                RetrofitInstance.myApi.getApi(latitude, longitude)
+                RetrofitInstance.myApi.getApi(latitude, longitude, units)
             } catch (e: IOException) {
                 Log.d(TAG, "internet connection issue")
                 return@launch
@@ -120,9 +132,16 @@ class MainActivity : AppCompatActivity() {
                 val sunrise = data.sys.sunrise
                 val unixTime = Instant.ofEpochSecond(sunrise.toLong()).atZone(ZoneId.of("Europe/Warsaw")).toLocalTime()
 
-                binding.TVcelsius.text = "$temperature°C"
-                binding.tvWind.text = "$wind km/h"
-                binding.tvSunrise.text = unixTime.toString()
+                if (binding.sCelFar!!.isChecked) {
+                    binding.TVcelsius.text = "$temperature°F"
+                    binding.tvWind.text = "$wind miles/h"
+                    binding.tvSunrise.text = unixTime.toString()
+                } else {
+                    binding.TVcelsius.text = "$temperature°C"
+                    binding.tvWind.text = "$wind meters/s"
+                    binding.tvSunrise.text = unixTime.toString()
+                }
+
             } else {
                 Log.d(TAG, "Reponse not successful")
             }
