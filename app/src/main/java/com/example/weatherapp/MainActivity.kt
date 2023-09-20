@@ -10,10 +10,10 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.weatherapp.api.RetrofitInstance
 import com.example.weatherapp.databinding.ActivityMainBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun spinnerHandle(){
+    private fun spinnerHandle()     {
         //City use in adapter
         val cities = arrayOf("Current", "Warsaw", "New York", "Sydney")
 
@@ -88,7 +88,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun fetchLocation() {
             //last known location
             val task = fusedLocationProviderClient.lastLocation
